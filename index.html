@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Human Segmentation</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.21.0"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/body-pix"></script>
+  <style>
+    canvas, video {
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+  </style>
+</head>
+<body>
+  <video id="video" autoplay playsinline style="display:none;"></video>
+  <canvas id="output"></canvas>
+
+  <script>
+    const video = document.getElementById("video");
+    const canvas = document.getElementById("output");
+    const ctx = canvas.getContext("2d");
+
+    async function setupCamera() {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      video.srcObject = stream;
+      await new Promise((resolve) => {
+        video.onloadedmetadata = resolve;
+      });
+    }
+
+    async function main() {
+      await setupCamera();
+      await video.play();
+
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+
+      const net = await bodyPix.load();
+
+      async function segment() {
+        const segmentation = await net.segmentPerson(video);
+        const mask = bodyPix.toMask(segmentation);
+
+        bodyPix.drawMask(canvas, video, mask, 0.7, 10, false);
+        requestAnimationFrame(segment);
+      }
+
+      segment();
+    }
+
+    main();
+  </script>
+</body>
+</html>
